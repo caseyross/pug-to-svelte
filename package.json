@@ -1,0 +1,12 @@
+{
+	"description": "Write Svelte components as Pug templates",
+	"homepage": "https://github.com/caseyross/pug-to-svelte",
+	"keywords": ["svelte", "pug"],
+	"license": "CC0-1.0",
+	"main": "index.js",
+	"name": "pug-to-svelte",
+	"peerDependencies": {
+		"pug": "*"
+	},
+	"version": "1.0.0"
+}
