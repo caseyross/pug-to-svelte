@@ -1,116 +1,121 @@
-# pug-to-svelte
+Have you ever wanted to write [Svelte](https://svelte.dev) components using [Pug](https://pugjs.org) markup, while maintaining all of the templating features that make Svelte great?
 
-Write Svelte components as Pug templates, without the compromises imposed by existing methods like `svelte-preprocess`'s native Pug handling.
+Now you can.
 
+# Installation
 
-## Supported syntax
+### Compatibility
+Due to the whitespace-based nature of Pug, you should be prepared to use tabs for indentation in components. This package is NOT compatible with code indented using spaces.
 
-`pug-to-svelte` supports almost all of Svelte's syntax. Notable exceptions include:
+### Install process
+1. Install this package normally using your favorite JS package manager.
+2. Determine an appropriate location (build step, etc.) in your codebase that's suited to managing a Pug -> Svelte transpile process. This will most likely be Svelte's `preprocess` API surface.
+3. Import the default export from this package into the location you chose. This default export is a function that transpiles a string from Pug-based Svelte syntax to "normal" HTML-based Svelte syntax.
+4. Hook in the transpilation function wherever the transpile needs to happen.
 
-- Shorthand attributes are not supported. (E.g., still use `Component(prop={prop})`, not `Component(prop)`, if the prop and value have the same name.)
+(For an example configuration with [Webpack](https://webpack.js.org), see the "Examples" section.)
 
-Besides the exceptions listed, if you find that `pug-to-svelte` is missing support for some syntax feature, please open an issue.
+# Usage
+Once installation is complete, simply write Svelte components normally, with Pug markup in place of HTML. Omit end tags (`{/if}`, `{/each}`, `{/await}`, `{/key}`) for Svelte logic conditionals, matching Pug. (For an example component, see the "Examples" section.)
 
+This package supports almost all of Svelte's syntax features. There are a handful of features that are not supported; these are listed in the next section.
 
-## Syntax example
+# Limitations
+The following syntaxes (marked with an X) are NOT supported. If necessary, use the suggested alternatives (marked with a check mark).
 
+### Split-line tags
+❌
+```pug
+Component(
+	propA={valueA}
+	propB={valueB}
+)
+```
+✅
+```pug
+Component(propA={valueA} propB={valueB})
+```
+
+### Shorthand props / attributes
+- ❌ `Component(prop)` -> ✅ `Component(prop={prop})`
+- ❌ `Component({prop})` -> ✅ `Component(prop={prop})`
+- ❌ `element({attribute})` -> ✅ `element(attribute={attribute})`
+
+### Spread props
+- ❌ `Component({...props})` -> ✅ `Component(propA={valueA} propB={valueB} propC={valueC})`
+- ❌ `Component({...$$props})` -> ✅ `Component(propA={valueA} propB={valueB} propC={valueC})`
+- ❌ `element({...$$restProps})` -> ✅ `element(attributeA={valueA} attributeB={valueB} attributeC={valueC})`
+
+### Style props
+- ❌ `Component(--style-var='value')` -> ✅ `Component(prop={value})`
+
+# Examples
+
+Pug / JS / CSS component example:
 ```pug
 script.
-	export let promise = Promise.reject('Oops! The developer messed up!')
+	export let phasers = 'stun'
+	const shirtColor = 'red'
 
-{#await promise}
-	LoadingAnimation(type='spinner')
-{:then value}
-	h1 My Favorite Things
-	{#if value.list && value.list.length > 0}
-		ol#favorites
-			{#each value.list as item, i}
-				FavoriteThing(item={item} rank={i + 1})
-	{:else if value.corrupted}
-		.list-gone Sorry, we've lost your favorite things. Tough luck.
+<!-- DUE TO REGULATION 336127-A, THIS PROCEDURE MAY ONLY BE MODIFIED WHILE WEARING TYPE-D PROTECTIVE GEAR -->
+{#await startupEngines}
+	EngineSpinner(speed='faster')
+{:then warpCoreStatus}
+	{#if powerLevel > 9000}
+		h1 Navigation plan: Andromeda Galaxy
+		{#each reachablePlanets as planet}
+			ol#galaxy-mapping
+				FastestRouteAnalysis(celestialBody={planet})
+		{:else}
+			img.empty(src='/vastness_of_space.jpg')
 	{:else}
-		.list-not-created You haven't created this list yet.
-		a(href='/{user.id}/favorites/create') Why not do it now?
-{:catch error}
-	h1 Uh-oh!
-	.network-error
-		| Couldn't connect to the server!
-		| The error was: {error}
-		button(on:click={() => retryPromise()}) Retry?
-		p Or return to
-			a.logo(href='/') the homepage.
+		input#fusion-battery(type='number' bind:value={powerLevel})
+		label(for='fusion-battery') Charge it up!
+{:catch ghostsInTheMachine}
+	h1 Houston, we have a problem!
+	.error-report
+		| Computer says: {errorMessage}
+		| Looks like we're not going to space today.
+		button(on:click={() => flipTheMagicSwitch()}) Maybe this will work?
+		p Or how about starting
+			a.extragalactic(href='https://svelte.dev/' target='_blank') a new galaxy?
 
 style.
-	button {
-		font-size: 0.75rem;
+	.empty {
+		pointer-events: none;
+	}
+	:global(#the-final-frontier) {
+		background: var(--filled-with-stars);
 	}
 ```
 
-## Installation
-
-`pug-to-svelte` exports a single function that converts a string from Pug-based to HTML-based Svelte syntax.
-
-Just apply it in your build step wherever you need to do that conversion.
-
-For example, say you want to use `webpack`, with `svelte-loader` for Svelte, and `svelte-preprocess` to handle CoffeeScript and Stylus. Then you can hook things up like this:
+Webpack 5 / [svelte-loader](https://github.com/sveltejs/svelte-loader) configuration example:
 ```javascript
 const pugToSvelte = require('pug-to-svelte')
-const autoToSvelte = require('svelte-preprocess')
 
 module.exports = {
-	// ...
 	module: {
-		rules: [
-			{
-				test: /\.pug$/,
-				use: [
-					{
-						loader: 'svelte-loader',
-						options: {
-							preprocess: [
-								{
-									markup: ({ content }) => {
-										return {
-											code: pugToSvelte(content)
-										}
-									} 
-								},
-								autoToSvelte({
-									defaults: {
-										script: 'coffeescript',
-										style: 'stylus',
-									}
-								})
-							]
-						},
-					},
-				],
-			},
-			// more rules... 
-		]
+		rules: [{
+			test: /\.pug$/,
+			use: [{
+				loader: 'svelte-loader',
+				options: {
+					preprocess: [{
+						markup: ({ content }) => ({ code: pugToSvelte(content) }),
+					}]
+				},
+			}],
+		}]
 	},
-	// ...
 }
 ```
 
-## Usage
+# About
 
-If you've got everything installed right, you should be able to write your templates directly in Pug now, while making full use of Svelte features.
-```pug
-script.
-	// ... code ...
+### Development status
+Development of this package is complete, and no code updates will be made. If you rely on this package as part of your build environment, rest assured that it will remain stable.
 
-// ... component markup ...
-// ... (can have as many top-level elements as you want) ...
-
-style.
-	// ... styles ...
-```
-
-## Contributing
-
-`pug-to-svelte` is feature complete, and any additional contributions are likely to be appreciated, but not welcomed. In other words, unless you've discovered a massive bug, it's probably better for you to spend your time elsewhere.
-
-## Thanks
-
-Inspired by [pynnl/pug2svelte](https://github.com/pynnl/pug2svelte) and [svelte-preprocess](https://github.com/sveltejs/svelte-preprocess).
+### Credits
+Inspired by:
+- [tienpv222/pug2svelte](https://github.com/tienpv222/pug2svelte)
+- [sveltejs/svelte-preprocess](https://github.com/sveltejs/svelte-preprocess)
