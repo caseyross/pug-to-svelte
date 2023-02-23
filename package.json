@@ -1,7 +1,7 @@
 {
-	"description": "Write Svelte components as Pug templates",
-	"homepage": "https://github.com/caseyross/pug-to-svelte",
-	"keywords": ["svelte", "pug"],
+	"author": "Casey Ross",
+	"description": "Pug to Svelte transpiler",
+	"keywords": ["preprocess", "pug", "svelte", "transpile"],
 	"license": "CC0",
 	"main": "index.js",
 	"name": "pug-to-svelte",
